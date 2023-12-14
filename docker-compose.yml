@@ -26,6 +26,7 @@ services:
       iceberg_net:
     depends_on:
       - rest
+      - nessie
       - minio
     volumes:
       - ./warehouse:/home/iceberg/warehouse
@@ -57,6 +58,13 @@ services:
       - CATALOG_WAREHOUSE=s3://warehouse/
       - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
       - CATALOG_S3_ENDPOINT=http://minio:9000
+  nessie:
+    image: projectnessie/nessie
+    container_name: iceberg-nessie
+    networks:
+      iceberg_net:
+    ports: 
+      - 19120:19120
   minio:
     image: minio/minio
     container_name: minio

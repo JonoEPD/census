@@ -22,7 +22,7 @@ STATE_LIST = list(STATE_CODE_MAP.keys())
 # list of years to download.
 # TODO: ACS goes back to 2014, but data definitions changed slightly at 2017
 YEARS = [2021, 2022]
-TABLESPACE = "demo"
+TABLESPACE = "nessie" # change to rest to use rest
 METADATA_LIST = [] # stub to stop complaining
 
 class Metadata:
