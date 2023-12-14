@@ -22,47 +22,25 @@ STATE_LIST = list(STATE_CODE_MAP.keys())
 # list of years to download.
 # TODO: ACS goes back to 2014, but data definitions changed slightly at 2017
 YEARS = [2021, 2022]
-TABLESPACE = "nessie" # change to rest to use rest
-METADATA_LIST = [] # stub to stop complaining
+CATALOG = "test" # change to rest to use rest
+METADATA_LIST = [] # FIXME: stub to stop complaining
+DATA_PATH = "/home/iceberg/data/" # location of iceberg data
+APP_PATH = "/home/iceberg/app"
 
 class Metadata:
     """Define some basic information about processing a class."""
 
     def __init__(self, column: str, comment: str, iceberg_type="int", **kwargs):
-        self.column = column
+        self.column = column.lower()
         self.comment = comment
         self.iceberg_type = iceberg_type
         self.processing_sql = kwargs.get("fn", self.identity_fn)
-        if "nullable" in kwargs:
-            self.nullable = kwargs.get("nullable", False)
-
-    @classmethod
-    def generate_bronze_query(cls, metadatas):
-        s = f"SELECT \ncast(YEAR as int)" # comma management        
-        for m in metadatas[1:]:
-            s += f",\n{m.get_select_fragment()}"
-        s += f"\nFROM {TABLESPACE}.stage.census"
-        s += "\nWHERE AGEP >= 18"
-        return s
-
-    @classmethod
-    def comment_queries(cls, metadatas):
-        queries = []
-        for m in metadatas[1:]:
-            queries.append(f"""
-            ALTER TABLE {TABLESPACE}.bronze.census
-            ALTER COLUMN {m.column} COMMENT '{m.comment}'""")
-        return queries
-
-    @classmethod
-    def generate_bronze_df(cls, spark, metadatas):
-        query = cls.generate_bronze_query(metadatas)
-        return spark.sql(query)    
+        self.nullable = kwargs.get("nullable", False)
 
     def get_select_fragment(self):
         select = self.column
         if self.nullable:
-            select = f"COALESCE({select}, -1)"
+            select = f"COALESCE({select}, NULL)"
         query = self.processing_sql(select)
         return self.wrap_with_cast(query)
 
@@ -72,6 +50,27 @@ class Metadata:
 
     def identity_fn(self, select):
         return f"{select}" # mark not nullable
+
+# queries for bronze census. move to table folder
+def generate_bronze_query(metadatas):
+    s = f"SELECT \ncast(YEAR as int) year" # comma management        
+    for m in metadatas[1:]:
+        s += f",\n{m.get_select_fragment()}"
+    s += f"\nFROM {CATALOG}.stage.census"
+    s += "\nWHERE AGEP >= 18"
+    return s
+
+def comment_queries(metadatas):
+    queries = []
+    for m in metadatas[1:]:
+        queries.append(f"""
+        ALTER TABLE {CATALOG}.bronze.census
+        ALTER COLUMN {m.column} COMMENT '{m.comment}'""")
+    return queries
+
+def generate_bronze_df(spark, metadatas):
+    query = generate_bronze_query(metadatas)
+    return spark.sql(query)
 
 METADATA_LIST = [
     # METADATA
