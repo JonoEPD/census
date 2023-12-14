@@ -32,13 +32,13 @@ services:
       - ./warehouse:/home/iceberg/warehouse
       - ./notebooks:/home/iceberg/notebooks/notebooks
       - ./data:/home/iceberg/data # downloaded ACS data
-      - ./layer:/home/iceberg/layer
+      - ./app:/home/iceberg/app
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
       - AWS_REGION=us-east-1
       - PYSPARK_DRIVER_PYTHON=ipython
-      - PYTHONPATH=$${PYTHONPATH}:/home/iceberg/layer
+      - PYTHONPATH=$${PYTHONPATH}:/home/iceberg/app:/home/iceberg/app/layer # mount app
     ports:
       - 8888:8888
       - 8080:8080
