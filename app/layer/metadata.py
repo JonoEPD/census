@@ -138,3 +138,5 @@ METADATA_LIST = [
 ]
 
 INPUT_LIST = [ m.column for m in METADATA_LIST]
+
+SILVER_IDENT_COLS = [ "id", "year"]

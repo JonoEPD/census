@@ -15,19 +15,24 @@ def ingest_data_dictionary(spark, table_name = "dd"):
     codes_df = spark.sql("""
     SELECT *, (n_codes_raw - has_null) n_codes
     FROM (
-        SELECT field, ANY_VALUE(category) category, ARRAY_AGG(code) AS codes, ARRAY_AGG(text) AS texts, MAX(CASE WHEN code = "null_str" THEN 1 ELSE 0 END) has_null, COUNT(*) AS n_codes_raw
+        SELECT field, ANY_VALUE(category) category, ARRAY_AGG(code) AS codes, ARRAY_AGG(text) AS texts, 
+        MAX(CASE WHEN code = "null_str" THEN 1 ELSE 0 END) has_null, COUNT(*) AS n_codes_raw,
+        ANY_VALUE(subtype) subtype                          
         FROM (
-            SELECT field, category, text, (CASE WHEN code LIKE 'b%' THEN 'null_str' ELSE code END) code 
+            SELECT field, category, subtype, text, (CASE WHEN code LIKE 'b%' THEN 'null_str' ELSE code END) code 
             FROM raw_dd WHERE heirarchy = 'VAL'
         ) 
         GROUP BY field
     )
     """)
     codes_df.createOrReplaceTempView("codes") # register to query again
-    # map the different rows into categories 
+    # map the different rows into categories. flag subtype 5
     aug_codes_df = spark.sql("""
         SELECT *, CASE category WHEN 'N' THEN 'number' WHEN 'C' THEN
-            CASE WHEN n_codes <= 2 THEN 'binary' WHEN n_codes <= 10 THEN 'small categorical' ELSE 'large categorical' END 
+            CASE WHEN subtype = 5 THEN 'large categorical'
+            WHEN n_codes <= 2 THEN 'binary' 
+            WHEN n_codes <= 10 THEN 'small categorical' 
+            ELSE 'large categorical' END 
         ELSE 'ERROR' END cardinality, CAST(codes[has_null] AS int) lower_bound, CAST(codes[n_codes-1+has_null] AS int) upper_bound
         FROM codes
     """)

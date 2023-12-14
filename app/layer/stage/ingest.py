@@ -7,7 +7,7 @@ import metadata
 PARTITION_COLS = ["YEAR", "ST"] # State and PUMA version of Area Code
 
 def load_all_files_sequential_filtered(spark):
-    """Execute more complex / less mem usage load.
+    """Execute more complex / less mem usage load. Try this if having mem issue loading the CSV (2GB)
     
     This function is also filtered by the metadata we will actually use."""
     first_insert_flag = True
@@ -16,7 +16,7 @@ def load_all_files_sequential_filtered(spark):
         for file_name in psam_files: # loop over states
             df = spark.read.option("header", True).csv(file_name)
             df_f = df[metadata.INPUT_LIST]
-            df_f_year = df_f.withColumn("YEAR", lit(yr))
+            df_f_year = df_f.withColumn("YEAR", pys_fn.lit(yr))
             write_fn = df_f_year.writeTo(f"{metadata.CATALOG}.stage.census").partitionedBy(*PARTITION_COLS)
             if first_insert_flag == True:
                 write_fn.createOrReplace()

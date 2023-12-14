@@ -63,7 +63,7 @@ def create_binary(spark, dd, table_name='binary'):
     null_idx = [ codes[0] == "null_str" for codes in pdd_b["codes"] ]
     code_true = np.array([ codes[0+isnull] for isnull, codes in zip(null_idx, pdd_b["codes"]) ])
     code_false = np.array([ 
-        codes[1+isnull] if len(codes) > 1 else 'NULL' 
+        codes[1+isnull] if len(codes) > 1 else np.nan
         for isnull, codes in zip(null_idx, pdd_b["codes"]) 
     ])
     # guard against error if true and false are marked as same for some reason
