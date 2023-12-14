@@ -49,7 +49,7 @@ pure-eval==0.2.2
 py4j==0.10.9.7
 pybind11==2.11.1
 Pygments==2.16.1
-pynessie==0.74.0
+pynessie==0.65.0
 pyspark==3.5.0
 python-dateutil==2.8.2
 pytz==2023.3.post1

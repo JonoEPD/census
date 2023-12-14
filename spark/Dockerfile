@@ -107,8 +107,11 @@ RUN echo '#! /bin/sh' >> /bin/pyspark-notebook \
  && echo "pyspark" >> /bin/pyspark-notebook \
  && chmod u+x /bin/pyspark-notebook
 
+
 RUN mkdir -p /root/.ipython/profile_default/startup
+# can this be more general? (load all profile)
 COPY ipython/startup/00-prettytables.py /root/.ipython/profile_default/startup
+COPY ipython/startup/01-env.py /root/.ipython/profile_default/startup
 COPY ipython/startup/README /root/.ipython/profile_default/startup
 
 COPY spark-defaults.conf /opt/spark/conf
