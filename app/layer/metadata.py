@@ -22,7 +22,7 @@ STATE_LIST = list(STATE_CODE_MAP.keys())
 # list of years to download.
 # TODO: ACS goes back to 2014, but data definitions changed slightly at 2017
 YEARS = [2021, 2022]
-CATALOG = "test" # change to rest to use rest
+CATALOG = "data" # change to rest to use rest
 METADATA_LIST = [] # FIXME: stub to stop complaining
 DATA_PATH = "/home/iceberg/data/" # location of iceberg data
 APP_PATH = "/home/iceberg/app"

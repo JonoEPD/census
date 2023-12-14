@@ -28,6 +28,7 @@ services:
       - rest
       - nessie
       - minio
+      - pg-catalog
     volumes:
       - ./warehouse:/home/iceberg/warehouse
       - ./notebooks:/home/iceberg/notebooks
@@ -45,6 +46,25 @@ services:
       - 8080:8080
       - 10000:10000
       - 10001:10001
+  pg-catalog:
+    image: postgres:16.1
+    container_name: pg_catalog
+    restart: always
+    environment:
+      - POSTGRES_USER=iceberg
+      - POSTGRES_PASSWORD=iceberg
+      - POSTGRES_DB=iceberg
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "iceberg" ]
+      interval: 5s
+      retries: 5
+    networks:
+      iceberg_net:
+    ports:
+      - "5432:5432"
   rest:
     image: tabulario/iceberg-rest
     container_name: iceberg-rest
@@ -95,8 +115,8 @@ services:
     entrypoint: >
       /bin/sh -c "
       until (/usr/bin/mc config host add minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
-      /usr/bin/mc rm -r --force minio/warehouse;
-      /usr/bin/mc mb minio/warehouse;
+      #/usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb --ignore_exists minio/warehouse;
       /usr/bin/mc policy set public minio/warehouse;
       tail -f /dev/null
       "

@@ -14,7 +14,7 @@ from pyspark.sql.functions import when, col
 
 SILVER_DATA_PATH = f"{metadata.CATALOG}.silver.data"
 SILVER_METADATA_PATH = f"{metadata.CATALOG}.silver.md"
-BRONZE_DATA_PATH = "test.bronze.census"
+BRONZE_DATA_PATH = f"{metadata.CATALOG}.bronze.census"
 
 def build_binary_select(df, dd):
     """Helper to generate a select statement for a table. 
