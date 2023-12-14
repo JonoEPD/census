@@ -15,7 +15,7 @@ STATE_CODE_MAP = {'AL': '01', 'AK': '02', 'AZ': '04', 'AR': '05', 'CA': '06',
                 'OK': '40', 'OR': '41', 'PA': '42', 'RI': '44', 'SC': '45',
                 'SD': '46', 'TN': '47', 'TX': '48', 'UT': '49', 'VT': '50',
                 'VA': '51', 'WA': '53', 'WV': '54', 'WI': '55', 'WY': '56',
-                'PR': '72'}
+                'PR': '72'}                
 
 STATE_LIST = list(STATE_CODE_MAP.keys())
 
@@ -28,11 +28,13 @@ METADATA_LIST = [] # stub to stop complaining
 class Metadata:
     """Define some basic information about processing a class."""
 
-    def __init__(self, column: str, comment: str, iceberg_type="string", **kwargs):
+    def __init__(self, column: str, comment: str, iceberg_type="int", **kwargs):
         self.column = column
         self.comment = comment
         self.iceberg_type = iceberg_type
-        self.processing_sql = kwargs.get("processing_fn", self.identity_fn)
+        self.processing_sql = kwargs.get("fn", self.identity_fn)
+        if "nullable" in kwargs:
+            self.nullable = kwargs.get("nullable", False)
 
     @classmethod
     def generate_bronze_query(cls, metadatas):
@@ -40,6 +42,7 @@ class Metadata:
         for m in metadatas[1:]:
             s += f",\n{m.get_select_fragment()}"
         s += f"\nFROM {TABLESPACE}.stage.census"
+        s += "\nWHERE AGEP >= 18"
         return s
 
     @classmethod
@@ -54,69 +57,71 @@ class Metadata:
     @classmethod
     def generate_bronze_df(cls, spark, metadatas):
         query = cls.generate_bronze_query(metadatas)
-        return spark.sql(query)
+        return spark.sql(query)    
 
     def get_select_fragment(self):
-        query = self.processing_sql()
+        select = self.column
+        if self.nullable:
+            select = f"COALESCE({select}, -1)"
+        query = self.processing_sql(select)
         return self.wrap_with_cast(query)
 
     def wrap_with_cast(self, query):
         """Wrap query with cast but keep name the same."""
         return f"CAST ({query} AS {self.iceberg_type}) {self.column}"
 
-    def identity_fn(self):
-        return f"{self.column}"
+    def identity_fn(self, select):
+        return f"{select}" # mark not nullable
 
 METADATA_LIST = [
     # METADATA
-    #Metadata("YEAR", "synthetically created YEAR column", "int"),
-    Metadata("REGION", "region", "int"),
-    Metadata("DIVISION", "area", "int"),
-    Metadata("ST", "state", "int"),
-    Metadata("PUMA", "area code (combine with state)", "int"),
-    Metadata("PWGTP", "weight, number of people this point represents", "int"),
+    #Metadata("YEAR", "synthetically created YEAR column"),
+    Metadata("REGION", "region"),
+    Metadata("DIVISION", "area"),
+    Metadata("ST", "state"),
+    Metadata("PUMA", "area code (combine with state)"),
+    Metadata("PWGTP", "weight, number of people this point represents"),
     # AGE
-    Metadata("AGEP", "persons age, top coded", "int"),
+    Metadata("AGEP", "persons age, top coded"),
     # SEX ( TODO: add FER)
-    Metadata("SEX", "binary coded", "int"),
+    Metadata("SEX", "binary coded"),
     # RACE
-    Metadata("RAC1P", "simple race code. 2P and 3P are more specific.", "int"),
-    Metadata("RACNUM", "simple multi-racial code", "int"),
+    Metadata("RAC1P", "simple race code. 2P and 3P are more specific."),
+    Metadata("RACNUM", "simple multi-racial code"),
     # INCOME (y)
-    Metadata("OIP", "other income", "string"), # TODO: get rid of bbbbbb
-    Metadata("PAP", "public income", "string"), # TODO: get rid of bbb
+    Metadata("OIP", "other income"), # TODO: get rid of bbbbbb
+    Metadata("PAP", "public income"), # TODO: get rid of bbb
     Metadata("RETP", "retirement"),
     Metadata("WAGP", "wage or salary income. needs adjinc"),
     Metadata("WKHP", "hours worked"),
-    Metadata("WKWN", "weeks worked last 12 months"),
+    Metadata("WKWN", "weeks worked last 12 months", nullable=True),
     Metadata("PERNP", "total earnings"),
     Metadata("PINCP", "total income"),
-    Metadata("ADJINC", "adjustment factor"),
+    Metadata("ADJINC", "adjustment factor, last 6 digits are after decimal"),
     # EDUCATION
     Metadata("SCH", "in school"),
     Metadata("SCHG", "grade"),
     Metadata("SCHL", "educational attainment"),
     # FAMILY STATUS
     Metadata("MAR", "marital status"),
-    Metadata("MARHYP", "last year married, na if not or <15"),
+    Metadata("MARHYP", "last year married, na if not or <15", nullable=True),
     Metadata("MSP", "spousal status"),
-    Metadata("PAOC", "own children, coding is female specific"),
+    Metadata("PAOC", "own children, coding is female specific", nullable=True),
     # VETERAN STATUS
     Metadata("MIL", "military service. 1/2/3/4. bunch of interesting MLP codes."),
-    Metadata("MLPA", "served after 9/11"),
-    Metadata("MLPB", "served during persian gulf war"),
+    Metadata("MLPA", "served after 9/11", nullable=True),
+    Metadata("MLPB", "served during persian gulf war", nullable=True),
     # CITIZENSHIP & LANGUAGE
-    Metadata("ENG", "english speaking"),
+    Metadata("ENG", "english speaking", nullable=True),
     Metadata("YOEP", "year of entry to USA"),
     Metadata("NATIVITY", "native to USA or foreign born"),
-    Metadata("NOP", "nativity to USA of parent"),
     Metadata("WAOB", "area of birth"),
     # DISABILITY
     Metadata("DEAR", "hearing disability"),
     Metadata("DEYE", "vision disability"),
     Metadata("DOUT", "living, has nans"),
     Metadata("DPHY", "ambluatory difficulty"),
-    Metadata("DRAT", "veteran disability rating (1-6, needs map)"),
+    Metadata("DRAT", "veteran disability rating (1-6, needs map)", nullable=True),
     Metadata("DIS", "disability recode"),
     # HEALTH CARE
     Metadata("HINS1", "employer/union"),

@@ -30,7 +30,8 @@ services:
       - minio
     volumes:
       - ./warehouse:/home/iceberg/warehouse
-      - ./notebooks:/home/iceberg/notebooks/notebooks
+      - ./notebooks:/home/iceberg/notebooks
+      - ./spark/notebooks:/home/iceberg/demobooks
       - ./data:/home/iceberg/data # downloaded ACS data
       - ./app:/home/iceberg/app
     environment:

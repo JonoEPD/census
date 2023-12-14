@@ -6,3 +6,7 @@ matplotlib==3.8.0
 scipy==1.11.3
 duckdb-engine==0.9.2
 pynessie==0.65.0
+jupyterlab==4.0.9
+jupyterlab-sparksql==1.1.0
+jupyterlab-sql-editor==0.1.89
+ipydatagrid==1.2.0
