@@ -1,6 +1,6 @@
 """Script to download ACS data for the listed years."""
 
-from layer.stage import metadata
+from layer import metadata
 import folktables
 
 def sync_acs_data(survey_year, states=metadata.STATE_LIST, horizon='1-Year', survey='person') -> None:

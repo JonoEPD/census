@@ -2,12 +2,15 @@
 
 from glob import glob
 from pyspark.sql.functions import lit
-from . import metadata
+import metadata
 
 PATH = "/home/iceberg/data/"
 PARTITION_COLS = ["YEAR", "ST"] # State and PUMA version of Area Code
 
-def load_all_files(spark):
+def load_all_files_sequential_filtered(spark):
+    """Execute more complex / less mem usage load.
+    
+    This function is also filtered by the metadata we will actually use."""
     first_insert_flag = True
     for yr in metadata.YEARS: # loop over years
         psam_files = glob(f"/home/iceberg/data/{yr}/1-Year/psam_*.csv")
@@ -21,3 +24,16 @@ def load_all_files(spark):
                 first_insert_flag = False
             else:
                 write_fn.append()
+
+def load_all_files(spark):
+    first_insert_flag = True
+    for yr in metadata.YEARS:
+        psam_files = glob(f"/home/iceberg/data/{yr}/1-Year/psam_*.csv")
+        df = spark.read.option("header", True).csv(psam_files)
+        df_yr = df.withColumn("YEAR", lit(yr))
+        write_fn = df_yr.writeTo("demo.stage.census").partitionedBy(*PARTITION_COLS)
+        if first_insert_flag == True:
+            write_fn.createOrReplace() # remove existing table if exists
+            first_insert_flag = False
+        else:
+            write_fn.append()
