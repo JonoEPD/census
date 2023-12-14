@@ -1,0 +1,6 @@
+[submodule "folktables"]
+	path = folktables
+	url = https://github.com/socialfoundations/folktables.git
+[submodule "docker-spark-iceberg"]
+	path = docker-spark-iceberg
+	url = https://github.com/unlikely-anecdote/docker-spark-iceberg.git
